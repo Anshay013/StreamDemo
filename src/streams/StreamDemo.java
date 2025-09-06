@@ -1,6 +1,7 @@
 package streams;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -288,7 +289,443 @@ public class StreamDemo {
 
 
 
+        String temp = "cccccdddddnnnnnaaaaarrrrrmmmmm";
 
+
+
+/*        Q1. Character Frequency
+
+        Given a string, use streams to find the frequency of each character.*/
+
+
+
+        Map<Character, Long>hash = temp.chars() // convert into cahr of streams
+                .mapToObj(x -> (char) x) // x is ASCII value, so get char value from it
+                .collect(Collectors.groupingBy( // collect by grouping by frequency
+                        Function.identity(), // group by char
+                        // TreeMap::new, // add this to get natural ordering (alphabetical order -> a, , c, d)
+                        Collectors.counting() // count the occurences
+                ));
+
+        System.out.println(hash);
+
+
+        // find max value char and frequency now --> gives us the lexicographically first having max freq
+
+
+        Optional<Map.Entry<Character, Long>> hash1 = hash.entrySet()
+                .stream()
+                .max(Map.Entry.comparingByValue());
+
+        hash1.ifPresent(x ->
+                System.out.println(x.getKey() + " " + x.getValue())
+                );
+
+
+       // ** A Now I want to get max frequency char given, if there are multiple give me lexicographically smallest
+
+
+        // getting directly from hash hence we need to sort again by values.
+
+
+        Optional<Map.Entry<Character, Long>> res1 =  hash.entrySet()
+                .stream()
+                .sorted(
+                        Comparator.comparing(Map.Entry<Character, Long>::getKey).reversed() // sort by key since values are already max
+                )
+                .findFirst(); // get first element
+
+        res1.ifPresent(
+                x ->
+                        System.out.println(x.getKey() + " " + x.getValue())
+        );
+
+
+        // if e have map do it directly like sort by values and key  (smallest) ->
+
+        Optional<Map.Entry<Character, Long>> res2 =  hash.entrySet()
+                .stream()
+                .sorted(
+                        Comparator.comparing(Map.Entry<Character, Long>::getValue).reversed() // hig
+                                .thenComparing(Map.Entry<Character, Long>::getKey)
+                )
+                .findFirst();
+
+        res2.ifPresent(
+                x ->
+                        System.out.println(x.getKey() + " " + x.getValue())
+        );
+
+
+
+        // for largest
+
+        Optional<Map.Entry<Character, Long>> res3 = hash.entrySet()
+                .stream()
+                .sorted(
+                        Comparator.comparing(Map.Entry<Character, Long>::getValue).reversed() // highest freq first
+                                .thenComparing(Map.Entry<Character, Long>::getKey, Comparator.reverseOrder()) // tie → largest char
+                )
+                .findFirst();
+
+        res3.ifPresent(
+                x ->
+                        System.out.println(x.getKey() + " " + x.getValue())
+        );
+
+
+        // Now lets do it in a single fun given only a raw string temp
+
+
+
+        // get max frequency with max key of char (largst char largest frequency)
+        // remember custom sort wont work in here
+        Optional<Map.Entry<Character, Long>> entry = temp.chars()
+                .mapToObj(c -> (char)c)
+                .collect(
+                        Collectors.groupingBy(
+                                Function.identity(),
+                                Collectors.counting()
+                        )
+                )
+                .entrySet()
+                .stream()
+                .sorted(
+                      Comparator.comparing(Map.Entry<Character, Long>::getValue).reversed()
+                              .thenComparing(Map.Entry<Character, Long>::getKey).reversed()
+                        // either write  Map.Entry<Character, Long>::getEntry, Comparator.reverseOrder())
+                        // or .reversed()
+
+                )
+                .findFirst();
+
+
+
+        entry.ifPresent(
+                x -> System.out.println(x.getKey() + " " + x.getValue())
+        );
+
+
+        // smallest key
+
+        Optional<Map.Entry<Character, Long>> entry1 = temp.chars()
+                .mapToObj(c -> (char)c)
+                .collect(
+                        Collectors.groupingBy(
+                                Function.identity(),
+                                Collectors.counting()
+                        )
+                )
+                .entrySet()
+                .stream()
+                .sorted(
+                        Comparator.comparing(Map.Entry<Character, Long>::getValue).reversed()
+                                .thenComparing(Map.Entry<Character, Long>::getKey)
+                        // either write  Map.Entry<Character, Long>::getEntry, Comparator.reverseOrder())
+                        // or .reversed()
+
+                )
+                .findFirst();
+
+        entry1.ifPresent(
+                x -> System.out.println(x.getKey() + " " + x.getValue())
+        );
+
+
+        // instead of nreturning the entrySet return value or key directly
+
+
+        Character myKey = temp.chars()
+                .mapToObj(c -> (char)c)
+                .collect(
+                        Collectors.groupingBy(
+                                Function.identity(),
+                                Collectors.counting()
+                        )
+                )
+                .entrySet()
+                .stream()
+                .sorted(
+                        Comparator.comparing(Map.Entry<Character, Long>::getValue).reversed()
+                                .thenComparing(Map.Entry<Character, Long>::getKey)
+                        // either write  Map.Entry<Character, Long>::getEntry, Comparator.reverseOrder())
+                        // or .reversed()
+
+                )
+                .findFirst().get().getKey();
+
+
+        // Anagram Check (new topic)
+        // Given two strings, use streams to check if they are anagrams (contain the same characters with same frequency).
+
+
+        String t1 = "aacfgh", t2 = "afhgca";
+
+        Map<Character, Long> map_t1 = t1.chars()
+                .mapToObj(c -> (char)c)
+                .collect(
+                        Collectors.groupingBy(
+                                Function.identity(),
+                                Collectors.counting()
+                        )
+                );
+
+        Map<Character, Long> map_t2 = t2
+                .chars()
+                .mapToObj(c -> (char)c)
+                .collect(
+                        Collectors.groupingBy(
+                        Function.identity(),
+                        Collectors.counting()
+                    )
+                );
+
+       // now compare map
+
+        Long count = map_t1
+                .entrySet()
+                .stream()
+                .takeWhile((a ->{
+                    if(map_t2.containsKey(a.getKey())) {
+                       Long v1 =  map_t2.getOrDefault(a.getKey(), 0L);
+                       return v1.equals(a.getValue());
+                    }
+                    return false;
+                })
+                ).count();
+
+        if(count == map_t1.size()) System.out.println("An anagram");
+
+
+        // Any better sol
+
+        if (t1.length() == t2.length()) {
+
+            // Convert each string to sorted char list
+            List<Character> sorted1 = t1.chars()
+                    .mapToObj(c -> (char) c)
+                    .sorted()
+                    .collect(Collectors.toList());
+
+            List<Character> sorted2 = t2.chars()
+                    .mapToObj(c -> (char) c)
+                    .sorted()
+                    .collect(Collectors.toList());
+
+            System.out.println(sorted1.equals(sorted2));
+        }
+
+
+
+
+        // Nth Highest Salary for employee
+        int n = 3;
+
+         List<Long> salaries = employees.
+                stream()
+                .sorted((a, b) ->{
+                    if(a.salary > b.salary) return -1;
+                    return 1;
+                })
+                 .map(e -> e.salary * 1L)
+                .limit(n)
+                 .collect(Collectors.toList());
+
+
+         System.out.println(salaries);
+
+
+         /*
+
+                    else if(a.salary == b.salary){
+                        if(a.name.length() > a.name.length()) return -1;
+                        else if(a.name.length() > a.name.length()) return 1;
+                        return a.name.compareTo(a.name);
+                    }
+                    return 1;
+          */
+
+        // Now get List of Employees
+
+        List<Employee> EmplList = employees.
+                stream()
+                .sorted((a, b) ->{
+                    if(a.salary > b.salary) return -1;
+                    else if(a.salary == b.salary){
+                        if(a.name.length() > a.name.length()) return -1;
+                        else if(a.name.length() > a.name.length()) return 1;
+                        return a.name.compareTo(a.name);
+                    }
+                    return 1;
+                })
+                .limit(n)
+                .collect(Collectors.toList());
+
+        EmplList
+                .forEach(e -> System.out.println(e.name + " " + e.salary ));
+
+
+
+
+
+
+
+
+
+        // Palindrome Strings
+
+        ArrayList<String>l1 = new ArrayList<>(Arrays.asList("racecar", "madam", "java"));
+
+        // return list of palindromic strings
+
+
+        List<String>allPaindromes = l1.stream()
+                .filter(s -> {
+                    int len = s.length();
+                    for(int i = 0; i < len/ 2; ++ i){
+                        if(s.charAt(i) != s.charAt(len - i - 1)) return false;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
+
+
+        System.out.println(allPaindromes);
+
+        // OR use helper fun.
+
+        allPaindromes = l1.stream()
+                .filter(StreamDemo::isPalindrome)
+                .collect(Collectors.toList());
+
+
+        System.out.println(allPaindromes);
+
+
+/*        Longest Word(s) in a Sentence
+
+        Given a sentence (string with spaces), use streams to return the longest word(s).
+        Example: "I love programming in Java" → ["programming"]*/
+
+        String word = "I love programming in Java";
+
+        System.out.println(word);
+
+        List<String>words = new ArrayList<>();
+        // we cannot use k as normal String because lamba needs mutable types to  e modified inside it or keep it as final (dont modify).
+
+        StringBuilder sb = new StringBuilder();
+
+        word.chars()
+                .mapToObj(c -> (char)c)
+                .forEach(c -> {
+                     if(!c.equals(' ')) sb.append(c);
+                     else{
+                         words.add(sb.toString());
+                         sb.setLength(0);
+                     }
+                });
+
+        String longestWord = words.stream()
+                .sorted(
+                        (a, b) ->{
+                            if(a.length() == b.length()) {
+                                return b.compareTo(a); // which is greater lexicographically comes first
+                                // a.compareTo(b) -> says which is smaller comes first
+                            }
+                            else if(a.length() > b.length()) return -1;
+                            else return 1;
+                        }
+                )
+                .limit(1)
+                .findFirst()
+                .orElse(" ");
+
+        System.out.println(longestWord);
+
+
+        // get all max len words
+
+        // split wot words
+        String [] sentence = word.split("\\s+");
+
+          // get amx len
+
+        OptionalInt mxLen = Arrays.stream(sentence)
+                .mapToInt(s -> s.length())
+                .max();
+
+        System.out.println(mxLen.getAsInt());
+
+
+        List<String>maxLenWords = Arrays.stream(sentence)
+                .filter(s -> s.length() == mxLen.getAsInt())
+                .collect(Collectors.toList());
+
+
+        System.out.println(maxLenWords);
+
+        // get one max word lexicographically largest
+
+
+
+        String ls = Arrays
+                .stream(sentence)
+                .max(
+                        Comparator.comparingInt(String::length)
+                                .thenComparing(Comparator.naturalOrder()).reversed() // revese the natural order
+                )
+                .orElse("");
+
+
+
+
+
+
+
+
+/*        Top K Frequent Words
+
+        Given a list of words, return the top 3 most frequent words sorted by frequency, and if frequencies are equal, sort lexicographically.*/
+
+        int k = 3;
+      // use tis alwasy for hasing
+        Map<String, Long> hashStrings = l1.stream()
+                .collect(
+                        Collectors.groupingBy(
+                                Function.identity(),
+                                Collectors.counting()
+                        )
+                );
+
+        // and this to sort map
+
+         List<Map.Entry<String, Long>> topK = hashStrings
+                .entrySet()
+                .stream()
+                .sorted(
+                        Comparator.comparing(Map.Entry<String, Long>::getValue).reversed()
+                                .thenComparing(Map.Entry<String, Long>::getKey).reversed()
+                )
+                 .limit(k)
+                .collect(Collectors.toList());
+
+
+         topK.forEach(x -> System.out.println(x.getKey() + " " + x.getValue()));
+
+
+
+
+
+    }
+
+
+    public static boolean isPalindrome(String s){
+        int len = s.length();
+        for(int i = 0; i < len/ 2; ++ i){
+            if(s.charAt(i) != s.charAt(len - i - 1)) return false;
+        }
+        return true;
     }
 
 
